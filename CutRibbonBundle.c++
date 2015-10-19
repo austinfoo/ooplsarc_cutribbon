@@ -1,4 +1,36 @@
 
+#ifndef CutRibbon_h
+#define CutRibbon_h
+
+// --------
+// includes
+// --------
+
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// ------------
+// cutribbon_eval
+// ------------
+
+int cutribbon_eval (int target_length, std::vector<int> cut_lengths);
+
+// -------------
+// cutribbon_print
+// -------------
+
+void cutribbon_print (std::ostream& w, int num_pieces);
+
+// -------------
+// cutribbon_solve
+// -------------
+
+void cutribbon_solve (std::istream& r, std::ostream& w);
+
+#endif
+
 // ----------------------------
 // projects/twobuttons/Twobuttons.c++
 // Copyright (C) 2015
@@ -19,7 +51,7 @@
 #include <algorithm>
 #include <list>
 
-#include "CutRibbon.h"
+
 
 // ------------
 // cutribbon_eval
@@ -61,7 +93,7 @@ int cutribbon_eval (int target_length, std::vector<int> cut_lengths)
 
   while (true)
   {
-    dump_stack (stack);
+    //dump_stack (stack);
 
     Node& top_node = stack.back();
     
@@ -126,4 +158,18 @@ void cutribbon_solve (std::istream& r, std::ostream& w)
 
   // Print the result
   cutribbon_print(w, num_pieces);
+}
+
+#include <iostream>
+
+
+
+// ----
+// main
+// ----
+
+int main () {
+    using namespace std;
+    cutribbon_solve(cin, cout);
+    return 0;
 }
