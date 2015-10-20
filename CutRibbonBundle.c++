@@ -49,6 +49,8 @@ void cutribbon_solve (std::istream& r, std::ostream& w);
 #include <cstdint>
 #include <algorithm>
 #include <vector>
+#include <list>
+#include <limits>
 
 
 
@@ -59,73 +61,63 @@ void cutribbon_solve (std::istream& r, std::ostream& w);
 class Node
 {
 public:
-  Node (int idx_) :
-    idx (idx_)
+  Node (int idx_, int length_, int depth_) :
+    idx (idx_),
+    length (length_),
+    depth (depth_)
   {}
 
   int idx = 0;
+  int length = 0;
+  int depth = 0;
 };
 
-using Stack = std::vector<Node>;
-
-void dump_stack (const Stack& stack, const std::vector<int>& cut_lengths, int total_length)
+class Visit
 {
-  for (const Node& node : stack) {
-    std::cout << node.idx  << " " << cut_lengths[node.idx] << std::endl;
-  }
-  std::cout << total_length << std::endl;
-  std::cout << std::endl;
-}
+public:
+  int depth = 0;
+};
+
+using Queue = std::list<Node>;
 
 int cutribbon_eval (int target_length, std::vector<int> cut_lengths)
 {
-  // Sort the cut lengths from smallest to largest.  Remove any duplicate values.
+  // Sort the cut lengths from smallest to largest.
   std::sort (cut_lengths.begin(), cut_lengths.end());
-  const int max_idx = cut_lengths.size() - 1;
 
-  // The depth first search stack seeded with the shortest cut idx
-  Stack stack {{0}};
-  
-  // The total length of cuts we have accumulated so far
-  int total_length = cut_lengths[0];
+  // The work queue
+  Queue queue {{0, cut_lengths[0], 1}, {1, cut_lengths[1], 1}, {2, cut_lengths[2], 1}};
 
-  while (true)
+  // The visited vector
+  std::vector<Visit> visited (4001);
+
+  // The current best solution
+  int solution_depth = 0;
+
+  while (!queue.empty())
   {
-    dump_stack (stack, cut_lengths, total_length);
+    Node& node = queue.front();
 
-    Node& top_node = stack.back();
-    
-    // If we are equal to the target length then we have found the solution
-    if (total_length == target_length) {
-      return stack.size();
+    if (node.length == target_length) {
+      solution_depth = node.depth;
     }
 
     else {
-      // The index of the next node to push
-      int next_idx = -1;
-      
-      // If we are shorter than the target length then explore one node further
-      if (total_length < target_length) {
-        next_idx = top_node.idx;
+      for (int next_idx = node.idx; next_idx < cut_lengths.size(); ++next_idx) {
+	int next_length = node.length + cut_lengths[next_idx];
+	int next_depth = node.depth + 1;
+	if (next_length <= target_length && visited[next_length].depth < next_depth)
+	{
+	  queue.emplace_back (next_idx, next_length, next_depth);
+	  visited[next_length].depth = next_depth;
+	}
       }
-
-      // Since we have exceeded the target length backtrack and restart exploration
-      else {
-        do {
-          next_idx = top_node.idx;
-          total_length -= cut_lengths[next_idx];
-          stack.pop_back();
-          top_node = stack.back();
-        } 
-        while (next_idx == max_idx);
-        next_idx += 1;
-      }
-
-      // Append the next idx
-      total_length += cut_lengths[next_idx];
-      stack.emplace_back (next_idx);
     }
+
+    queue.pop_front();
   }
+
+  return solution_depth;
 }
 
 // -------------
