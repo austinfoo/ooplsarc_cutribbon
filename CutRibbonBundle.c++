@@ -47,9 +47,8 @@ void cutribbon_solve (std::istream& r, std::ostream& w);
 #include <string>   // getline, string
 #include <utility>
 #include <cstdint>
-#include <stack>
 #include <algorithm>
-#include <list>
+#include <vector>
 
 
 
@@ -60,70 +59,71 @@ void cutribbon_solve (std::istream& r, std::ostream& w);
 class Node
 {
 public:
-  Node (int idx_, int length_, int total_length_) :
-    idx (idx_),
-    length (length_),
-    total_length (total_length_)
+  Node (int idx_) :
+    idx (idx_)
   {}
 
   int idx = 0;
-  int length = 0;
-  int total_length = 0;
 };
 
-void dump_stack (const std::list<Node>& list)
+using Stack = std::vector<Node>;
+
+void dump_stack (const Stack& stack, const std::vector<int>& cut_lengths, int total_length)
 {
-  for (auto& node : list) {
-    std::cout << node.idx  << " " << node.length << " " << node.total_length << std::endl;
+  for (const Node& node : stack) {
+    std::cout << node.idx  << " " << cut_lengths[node.idx] << std::endl;
   }
+  std::cout << total_length << std::endl;
   std::cout << std::endl;
 }
 
 int cutribbon_eval (int target_length, std::vector<int> cut_lengths)
 {
-  // The stack to contain the current state of our depth first search
-  std::list<Node> stack;
-
-  // Sort the cut length from smallest to largest.  Remove any dupliate values.
+  // Sort the cut lengths from smallest to largest.  Remove any duplicate values.
   std::sort (cut_lengths.begin(), cut_lengths.end());
   const int max_idx = cut_lengths.size() - 1;
 
-  // Seed the stack with the smallest cut
-  stack.emplace_back(0, cut_lengths[0], cut_lengths[0]);
+  // The depth first search stack seeded with the shortest cut idx
+  Stack stack {{0}};
+  
+  // The total length of cuts we have accumulated so far
+  int total_length = cut_lengths[0];
 
   while (true)
   {
-    //dump_stack (stack);
+    dump_stack (stack, cut_lengths, total_length);
 
     Node& top_node = stack.back();
     
     // If we are equal to the target length then we have found the solution
-    if (top_node.total_length == target_length) {
+    if (total_length == target_length) {
       return stack.size();
     }
 
-    // If we are shorter than the target length then explore one node further
-    else if (top_node.total_length < target_length) {
-      stack.emplace_back (top_node.idx, top_node.length, top_node.total_length + top_node.length);
-    }
-
-    // Since we have exceeded the target length backtrack and restart exploration
     else {
+      // The index of the next node to push
+      int next_idx = -1;
+      
+      // If we are shorter than the target length then explore one node further
+      if (total_length < target_length) {
+        next_idx = top_node.idx;
+      }
 
-      // Back up to the last node with a non-max idx
-      int last_idx_explored_from_top_node = 0;
-      do {
-	last_idx_explored_from_top_node = top_node.idx;
-	stack.pop_back();
-	top_node = stack.back();
-      } 
-      while (last_idx_explored_from_top_node == max_idx);
+      // Since we have exceeded the target length backtrack and restart exploration
+      else {
+        do {
+          next_idx = top_node.idx;
+          total_length -= cut_lengths[next_idx];
+          stack.pop_back();
+          top_node = stack.back();
+        } 
+        while (next_idx == max_idx);
+        next_idx += 1;
+      }
 
-      // The top node has not explored all children.  Append the next child.
-      int next_idx = last_idx_explored_from_top_node + 1;
-      int next_length = cut_lengths[next_idx];
-      int next_total_length = top_node.total_length + next_length;
-      stack.emplace_back (next_idx, next_length, next_total_length);
+      // Append the next idx
+      total_length += cut_lengths[next_idx];
+      stack.emplace_back (next_idx);
     }
   }
 }
